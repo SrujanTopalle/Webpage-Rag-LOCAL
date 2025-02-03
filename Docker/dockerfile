@@ -17,4 +17,4 @@ RUN pip install --no-cache-dir streamlit ollama langchain langchain-community qd
 EXPOSE 8501
 
 # Command to run the application
-CMD ["streamlit", "run", "app4new.py", "--server.address", "0.0.0.0"]
+CMD ["streamlit", "run", "app_docker.py", "--server.address", "0.0.0.0"]
