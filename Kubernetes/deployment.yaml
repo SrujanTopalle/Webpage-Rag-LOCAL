@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - name: app
+        image: srujantopalle/devopsproject:1.0
+        ports:
+        - containerPort: 8501  # Streamlit default port
+        env:
+        - name: OLLAMA_HOST
+          value: "http://host.docker.internal:11434"
+        - name: QDRANT_HOST
+          value: "http://host.docker.internal:6333"
