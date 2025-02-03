@@ -1,5 +1,5 @@
 import streamlit as st
-import ollama
+from transformers import pipeline
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import WebBaseLoader
 from langchain_community.vectorstores import Qdrant
@@ -8,7 +8,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.http.models import Distance, VectorParams
 
 st.title("Chat with Webpage 🌐")
-st.caption("This app allows you to chat with a webpage using local llama2 and RAGe")
+st.caption("This app allows you to chat with a webpage using local LLM and RAG")
 
 # Get the webpage URL from the user
 webpage_url = st.text_input("Enter Webpage URL", type="default")
@@ -22,7 +22,7 @@ if webpage_url:
 
     # 2. Create Ollama embeddings and vector store with Qdrant
     ollama_host = "http://host.docker.internal:11434"
-    embeddings = OllamaEmbeddings(model="llama2",base_url = ollama_host)
+    embeddings = OllamaEmbeddings(model="llama2", base_url=ollama_host)
     qdrant_client = QdrantClient("http://host.docker.internal:6333")  # Ensure Qdrant is running locally
     collection_name = "web_docs"
 
@@ -38,11 +38,9 @@ if webpage_url:
     # Add documents to the collection
     vectorstore.add_documents(splits)
 
-    # 3. Call Ollama 2 model
-    def ollama_llm(question, context):
-        formatted_prompt = f"Question: {question}\n\nContext: {context}"
-        response = ollama.chat(model='llama2', messages=[{'role': 'user', 'content': formatted_prompt}])
-        return response['message']['content']
+    # 3. Load Hugging Face model for text generation
+    hf_model = "facebook/bart-large-cnn"  # You can change this to another model like "google/flan-t5-large"
+    generator = pipeline("text2text-generation", model=hf_model)
 
     # 4. RAG Setup
     retriever = vectorstore.as_retriever()
@@ -53,7 +51,9 @@ if webpage_url:
     def rag_chain(question):
         retrieved_docs = retriever.invoke(question)
         formatted_context = combine_docs(retrieved_docs)
-        return ollama_llm(question, formatted_context)
+        prompt = f"Question: {question}\n\nContext: {formatted_context}\n\nAnswer:"
+        response = generator(prompt, max_length=256, truncation=True)
+        return response[0]['generated_text']
 
     st.success(f"Loaded {webpage_url} successfully!")
 
